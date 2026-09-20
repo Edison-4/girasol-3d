@@ -2,80 +2,63 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Girasol 3D Optimizado</title>
+    <title>Detector Girasol 3D</title>
     <style>
-        /* Mantenemos el fondo negro para que la flor resalte */
-        body { margin: 0; overflow: hidden; background-color: #000000; }
+        /* Fondo gris oscuro para confirmar que el código nuevo cargó */
+        body { margin: 0; overflow: hidden; background-color: #222222; }
         canvas { display: block; }
+        /* Texto de estado en la pantalla */
+        #estado {
+            position: absolute; top: 20px; left: 20px;
+            color: white; font-family: sans-serif; font-size: 18px;
+            background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px;
+        }
     </style>
 </head>
 <body>
-    <!-- 1. Importamos las librerías de Three.js -->
+    <div id="estado">Cargando modelo girasole.glb...</div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     
     <script>
-        // 2. Configuración básica de la escena
         const scene = new THREE.Scene();
-        
-        // La cámara: alejamos la vista (z = 100) para poder ver modelos grandes
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.z = 100; 
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // 3. Luces para darle volumen
-        const luzAmbiente = new THREE.AmbientLight(0xffffff, 0.8);
+        // Luces extra fuertes por si el material se oscureció en la conversión
+        const luzAmbiente = new THREE.AmbientLight(0xffffff, 2);
         scene.add(luzAmbiente);
-        
-        const luzDireccional = new THREE.DirectionalLight(0xffffff, 0.5);
-        luzDireccional.position.set(10, 10, 10);
-        scene.add(luzDireccional);
+        const luzHemisferio = new THREE.HemisphereLight(0xffffbb, 0x080820, 2);
+        scene.add(luzHemisferio);
 
-        // 4. Cargamos el modelo GLB
         let miGirasol;
         const loader = new THREE.GLTFLoader();
         
-        loader.load('girasol.glb', function (gltf) {
+        loader.load('girasole.glb', function (gltf) {
+            // Si funciona, cambia el texto
+            document.getElementById('estado').innerText = '¡Modelo cargado con éxito! ✅';
+            
             miGirasol = gltf.scene;
-            
-            // REDUCIMOS su tamaño a la mitad (0.5)
             miGirasol.scale.set(0.5, 0.5, 0.5); 
-            
-            // INTENTAMOS forzar la lectura del color de los vértices
-            miGirasol.traverse(function (hijo) {
-                if (hijo.isMesh) {
-                    hijo.material.vertexColors = true; 
-                    hijo.material.needsUpdate = true;
-                }
-            });
-
-            // Bajamos un poco el modelo en la pantalla para que quede centrado
             miGirasol.position.set(0, -15, 0);
             scene.add(miGirasol);
             
         }, undefined, function (error) {
-            console.error('Hubo un error cargando el modelo GLB:', error);
+            // Si falla, te avisa en la pantalla
+            document.getElementById('estado').innerText = '❌ Error: No se encontró o no se pudo leer girasole.glb';
         });
 
-        // 5. Bucle de animación (para que rote suavemente)
         function animate() {
             requestAnimationFrame(animate);
-            if (miGirasol) {
-                miGirasol.rotation.y += 0.01; 
-            }
+            if (miGirasol) miGirasol.rotation.y += 0.01; 
             renderer.render(scene, camera);
         }
         animate();
-
-        // 6. Ajustar el tamaño si cambias la ventana o giras el celular
-        window.addEventListener('resize', () => {
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-        });
     </script>
 </body>
 </html>
